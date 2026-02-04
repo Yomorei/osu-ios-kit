@@ -7,3 +7,5 @@ This repo contains:
 - Patch files to add custom server support (to be added)
 - Documentation for Windows sideloading
 
+----------------------
+Please note, this is an active work in progress, no one should really even see this repo, but in-case you do, as of now 2/3/26 it doesn't work, as I'm not finished. 
