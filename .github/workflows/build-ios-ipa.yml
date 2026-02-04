@@ -25,31 +25,44 @@ jobs:
         run: |
           git clone https://github.com/ppy/osu.git upstream
           cd upstream
+          git fetch --tags --force
           git checkout "${{ inputs.osu_ref }}"
 
       - name: Apply patches
         run: |
           cd upstream
-          git apply --3way ../patches/*.patch
+          if ls ../patches/*.patch >/dev/null 2>&1; then
+            git apply --3way ../patches/*.patch
+          else
+            echo "No patches found in ../patches"
+            exit 1
+          fi
 
       - name: Install iOS workload
+        working-directory: upstream
         run: |
+          dotnet workload restore
           dotnet workload install ios
 
+      - name: Restore
+        working-directory: upstream
+        run: dotnet restore osu.iOS/osu.iOS.csproj
+
       - name: Build unsigned IPA
-        run: |
-          cd upstream
-          dotnet publish osu.iOS/osu.iOS.csproj `
-            -c Release -f net8.0-ios -r ios-arm64 `
-            -p:BuildIpa=true `
-            -p:MtouchLink=SdkOnly
+        working-directory: upstream
+        run: dotnet publish osu.iOS/osu.iOS.csproj -c Release -f net8.0-ios -r ios-arm64 -p:BuildIpa=true -p:MtouchLink=SdkOnly -p:EnableCodeSigning=false
 
       - name: Collect IPA
         run: |
-          cd upstream
-          mkdir -p ../out
-          # Adjust if your output path differs; this is the common pattern
-          find . -name "*.ipa" -maxdepth 6 -print -exec cp "{}" ../out/osu-ios.ipa \;
+          mkdir -p out
+          IPA_PATH="$(find upstream -type f -name "*.ipa" | head -n 1)"
+          if [ -z "$IPA_PATH" ]; then
+            echo "No IPA produced."
+            ls -la upstream/osu.iOS/bin || true
+            exit 1
+          fi
+          cp "$IPA_PATH" out/osu-ios.ipa
+          ls -la out/osu-ios.ipa
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
