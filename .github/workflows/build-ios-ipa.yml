@@ -1,0 +1,58 @@
+name: Build unsigned iOS IPA
+
+on:
+  workflow_dispatch:
+    inputs:
+      osu_ref:
+        description: "ppy/osu ref (branch, tag, or commit)"
+        required: false
+        default: "master"
+
+jobs:
+  build:
+    runs-on: macos-14
+
+    steps:
+      - name: Checkout kit repo
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "8.0.x"
+
+      - name: Clone upstream osu
+        run: |
+          git clone https://github.com/ppy/osu.git upstream
+          cd upstream
+          git checkout "${{ inputs.osu_ref }}"
+
+      - name: Apply patches
+        run: |
+          cd upstream
+          git apply --3way ../patches/*.patch
+
+      - name: Install iOS workload
+        run: |
+          dotnet workload install ios
+
+      - name: Build unsigned IPA
+        run: |
+          cd upstream
+          dotnet publish osu.iOS/osu.iOS.csproj `
+            -c Release -f net8.0-ios -r ios-arm64 `
+            -p:BuildIpa=true `
+            -p:MtouchLink=SdkOnly
+
+      - name: Collect IPA
+        run: |
+          cd upstream
+          mkdir -p ../out
+          # Adjust if your output path differs; this is the common pattern
+          find . -name "*.ipa" -maxdepth 6 -print -exec cp "{}" ../out/osu-ios.ipa \;
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: osu-ios-ipa
+          path: out/osu-ios.ipa
