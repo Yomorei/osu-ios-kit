@@ -1,0 +1,16 @@
+From f27a3c5f036b3aa1cbf11c6ea7d3f647ec8b20ee Mon Sep 17 00:00:00 2001
+From: Yomorei <Yomoreibusiness@gmail.com>
+Date: Tue, 3 Feb 2026 11:04:13 -0600
+Subject: [PATCH 01/10] added iOS build artifact workflow.
+
+---
+ .github/workflows/ios-artifact.yml | 0
+ 1 file changed, 0 insertions(+), 0 deletions(-)
+ create mode 100644 .github/workflows/ios-artifact.yml
+
+diff --git a/.github/workflows/ios-artifact.yml b/.github/workflows/ios-artifact.yml
+new file mode 100644
+index 0000000000..e69de29bb2
+-- 
+2.50.1.windows.1
+

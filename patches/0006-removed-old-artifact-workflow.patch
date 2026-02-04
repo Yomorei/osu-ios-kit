@@ -1,0 +1,72 @@
+From fec0b929f0e4a7dd658aecc72428d9d06d183ca0 Mon Sep 17 00:00:00 2001
+From: Yomorei <Yomoreibusiness@gmail.com>
+Date: Tue, 3 Feb 2026 15:57:44 -0600
+Subject: [PATCH 06/10] removed old artifact workflow
+
+---
+ .github/workflows/ios-artifact.yml | 52 ------------------------------
+ 1 file changed, 52 deletions(-)
+ delete mode 100644 .github/workflows/ios-artifact.yml
+
+diff --git a/.github/workflows/ios-artifact.yml b/.github/workflows/ios-artifact.yml
+deleted file mode 100644
+index 19c253c6e6..0000000000
+--- a/.github/workflows/ios-artifact.yml
++++ /dev/null
+@@ -1,52 +0,0 @@
+-name: iOS build artifact (disabled)
+-
+-on:
+-  workflow_dispatch:
+-
+-jobs:
+-  build-ios:
+-    runs-on: macos-15
+-    timeout-minutes: 60
+-
+-    steps:
+-      - uses: actions/checkout@v4
+-
+-      - uses: actions/setup-dotnet@v4
+-        with:
+-          dotnet-version: "8.0.x"
+-
+-      - name: Install iOS workload
+-        run: dotnet workload install ios
+-
+-      - name: Use Xcode 16.4
+-        run: sudo xcode-select -switch /Applications/Xcode_16.4.app
+-
+-      - name: Publish device IPA
+-        run: dotnet publish osu.iOS/osu.iOS.csproj -c Debug -f net8.0-ios -r ios-arm64 -p:BuildIpa=true -p:MtouchLink=SdkOnly
+-
+-      - name: Locate outputs
+-        shell: bash
+-        run: |
+-          echo "Searching for .ipa..."
+-          find . -maxdepth 8 -type f -name "*.ipa" -print || true
+-          echo "Searching for .app..."
+-          find . -maxdepth 8 -type d -name "*.app" -print || true
+-
+-      - name: Zip first .app (if present)
+-        shell: bash
+-        run: |
+-          APP_DIR="$(find . -maxdepth 8 -type d -name '*.app' | head -n 1)"
+-          if [ -z "$APP_DIR" ]; then
+-            echo "No .app found (maybe produced .ipa instead)."
+-            exit 0
+-          fi
+-          echo "Using APP_DIR=$APP_DIR"
+-          ditto -c -k --sequesterRsrc --keepParent "$APP_DIR" osu-iOS-app.zip
+-
+-      - name: Upload artifacts
+-        uses: actions/upload-artifact@v4
+-        with:
+-          name: osu-ios-build
+-          path: |
+-            **/*.ipa
+-            osu-iOS-app.zip
+\ No newline at end of file
+-- 
+2.50.1.windows.1
+
