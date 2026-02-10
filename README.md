@@ -8,4 +8,4 @@ This repo contains:
 - Documentation for Windows sideloading
 
 ----------------------
-Please note, this is an active work in progress, no one should really even see this repo, but in-case you do, as of now 2/3/26 it doesn't work, as I'm not finished. 
+Please note, this is an active work in progress, this would be private but I don't really feel like messing with PAT for this as it's not really a concern for being public just know this is not functional (WELL it is, it'll build a functional ipa, just not private server shit rn) 
