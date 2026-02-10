@@ -3,10 +3,14 @@ name: Build unsigned iOS IPA
 on:
   workflow_dispatch:
     inputs:
+      osu_repo:
+        description: "Repo to build (owner/name)"
+        required: true
+        default: "Yomorei/osu-ios"
       osu_ref:
-        description: "ppy/osu ref (branch, tag, or commit)"
-        required: false
-        default: "master"
+        description: "Branch/tag/commit to build"
+        required: true
+        default: "kit/private-servers-ui"
 
 jobs:
   build:
@@ -21,48 +25,46 @@ jobs:
         with:
           dotnet-version: "8.0.x"
 
-      - name: Clone upstream osu
-        run: |
-          git clone https://github.com/ppy/osu.git upstream
-          cd upstream
-          git fetch --tags --force
-          git checkout "${{ inputs.osu_ref }}"
+      - name: Checkout osu repo
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ inputs.osu_repo }}
+          ref: ${{ inputs.osu_ref }}
+          path: upstream
+          fetch-depth: 0
 
-      - name: Apply patches
+      - name: Show build target
+        shell: bash
+        run: |
+          echo "repo=${{ inputs.osu_repo }}"
+          echo "ref=${{ inputs.osu_ref }}"
+          git -C upstream rev-parse HEAD
+          git -C upstream log -1 --oneline
+          git -C upstream remote -v
+
+      - name: Install workloads required by project
+        shell: bash
         run: |
           cd upstream
-          if ls ../patches/*.patch >/dev/null 2>&1; then
-            git apply --3way ../patches/*.patch
-          else
-            echo "No patches found in ../patches"
-            exit 1
-          fi
-
-      - name: Install iOS workload
-        working-directory: upstream
-        run: |
           dotnet workload restore
-          dotnet workload install ios
-
-      - name: Restore
-        working-directory: upstream
-        run: dotnet restore osu.iOS/osu.iOS.csproj
 
       - name: Build unsigned IPA
-        working-directory: upstream
-        run: dotnet publish osu.iOS/osu.iOS.csproj -c Release -f net8.0-ios -r ios-arm64 -p:BuildIpa=true -p:MtouchLink=SdkOnly -p:EnableCodeSigning=false
+        shell: bash
+        run: |
+          cd upstream
+          dotnet publish osu.iOS/osu.iOS.csproj \
+            -c Release -f net8.0-ios -r ios-arm64 \
+            -p:BuildIpa=true \
+            -p:MtouchLink=SdkOnly \
+            -p:EnableCodeSigning=false
 
       - name: Collect IPA
+        shell: bash
         run: |
+          rm -rf out
           mkdir -p out
-          IPA_PATH="$(find upstream -type f -name "*.ipa" | head -n 1)"
-          if [ -z "$IPA_PATH" ]; then
-            echo "No IPA produced."
-            ls -la upstream/osu.iOS/bin || true
-            exit 1
-          fi
-          cp "$IPA_PATH" out/osu-ios.ipa
-          ls -la out/osu-ios.ipa
+          find upstream -maxdepth 10 -name "*.ipa" -print -exec cp "{}" out/osu-ios.ipa \;
+          test -f out/osu-ios.ipa
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
